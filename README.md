@@ -3,8 +3,14 @@
 A gophertunnel protocol interface implementation to support older Minecraft Bedrock versions.
 
 ## Supported Versions
+Native: 1.26.60 (protocol 2225).
+
 | Protocol ID | Version  | Support |
 |-------------|----------|---------|
+| 2193        | 1.26.50  | ✅       |
+| 2168        | 1.26.40  | ✅       |
+| 1001        | 1.26.30  | ✅       |
+| 975         | 1.26.20  | ✅       |
 | 944         | 1.26.10  | ✅       |
 | 924         | 1.26.0   | ✅       |
 | 898         | 1.21.130 | ✅       |
@@ -25,10 +31,12 @@ A gophertunnel protocol interface implementation to support older Minecraft Bedr
 | 671         | 1.20.80  | ✅       |
 | 662         | 1.20.70  | ✅       |
 | 649         | 1.20.60  | ✅       |
+| 486         | 1.18.10-1.18.12     |
+| 475         | 1.18.0-1.18.2       |
+| 419         | 1.16.100            |
 
-<= 1.20.50 is not possible to support due to different compression logic and gophertunnel does not provide a way to
-support dynamic compression.
-
+//legacyver/mapped (mapped.All())
+other (`legacyver.All()`).
 
 ## Credits
 - [Flonja/multiversion](https://github.com/Flonja/multiversion)
