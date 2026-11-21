@@ -29,16 +29,21 @@ func ServerBoundDiagnostics(io protocol.IO, pk *packet.ServerBoundDiagnostics) {
 				io.Uint64(&x.DurationNanos)
 				io.Uint8(&x.PercentOfTotal)
 				if proto.IsProtoGTE(io, proto.ID2192) {
-					io.Vec3(&x.Position)
-					io.String(&x.Dimension)
+					position, _ := x.Position.Value()
+					dimension, _ := x.Dimension.Value()
+					io.Vec3(&position)
+					io.String(&dimension)
+					x.Position, x.Dimension = protocol.Option(position), protocol.Option(dimension)
 				}
 			})
 			protocol.Slice(io, &pk.SystemDiagnostics)
 			if proto.IsProtoGTE(io, proto.ID2168) {
-				protocol.FuncIOSlice(io, &pk.SystemCategories, func(io protocol.IO, x *protocol.SystemCategory) {
+				categories, _ := pk.SystemCategories.Value()
+				protocol.FuncIOSlice(io, &categories, func(io protocol.IO, x *protocol.SystemCategory) {
 					io.String(&x.CategoryName)
 					io.Uint64(&x.SystemIndex)
 				})
+				pk.SystemCategories = protocol.Option(categories)
 			}
 			if proto.IsProtoGTE(io, proto.ID1001) {
 				protocol.Slice(io, &pk.WhiskerScopes)

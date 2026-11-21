@@ -157,6 +157,8 @@ func marshalLegacyPlayerInventoryAction(io protocol.IO, x *protocol.InventoryAct
 	io.ItemInstance(&x.NewItem)
 }
 
+// IOStackRequestAction reads/writes a stack request action using the numbering from before 1.26.60, which
+// inserted CraftReserved and shifted the deprecated craft actions after it.
 func IOStackRequestAction(io protocol.IO, x *protocol.StackRequestAction) {
 	if IsReader(io) {
 		var id uint8
@@ -176,20 +178,31 @@ func IOStackRequestAction(io protocol.IO, x *protocol.StackRequestAction) {
 		} else {
 			io.Uint8(&id)
 		}
-		if !lookupStackRequestAction(id, x) {
+		variant := uint32(id)
+		if id >= protocol.StackRequestActionPlaceInContainer {
+			// IDs 7 and 8 (place in / take out of container) are no longer used.
+			if id <= protocol.StackRequestActionTakeOutContainer {
+				io.UnknownEnumOption(id, "stack request action type")
+				return
+			}
+			variant -= 2
+		}
+		if variant >= uint32(len(stackRequestActions2193)) {
 			io.UnknownEnumOption(id, "stack request action type")
 			return
 		}
+		*x = stackRequestActions2193[variant]()
 	} else {
-		var id byte
-		if !lookupStackRequestActionType(*x, &id) {
+		variant, ok := stackRequestActionVariant2193(*x)
+		if !ok {
 			io.UnknownEnumOption(fmt.Sprintf("%T", *x), "stack request action type")
+			return
+		}
+		id := uint8(variant)
+		if variant >= uint32(protocol.StackRequestActionPlaceInContainer) {
+			id += 2
 		}
 		if IsProtoGTE(io, ID2168) {
-			variant := uint32(id)
-			if id > protocol.StackRequestActionTakeOutContainer {
-				variant -= 2
-			}
 			io.Varuint32(&variant)
 		}
 		io.Uint8(&id)

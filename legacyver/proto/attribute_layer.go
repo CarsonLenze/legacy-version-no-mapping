@@ -2,7 +2,9 @@ package proto
 
 import "github.com/sandertv/gophertunnel/minecraft/protocol"
 
-func MarshalEnvironmentAttributeData(r protocol.IO, x *protocol.EnvironmentAttributeData) {
+func MarshalEnvironmentAttributeData(r protocol.IO, native *protocol.EnvironmentAttributeData) {
+	value := environmentFromNative(native)
+	x := &value
 	r.String(&x.AttributeName)
 	protocol.OptionalMarshaler(r, &x.FromAttribute)
 	protocol.Single(r, &x.Attribute)
@@ -23,6 +25,9 @@ func MarshalEnvironmentAttributeData(r protocol.IO, x *protocol.EnvironmentAttri
 	if IsProtoGTE(r, ID2192) {
 		protocol.Single(r, &x.NoiseAlignment)
 	}
+	if IsReader(r) {
+		environmentToNative(value, native)
+	}
 }
 
 func MarshalAttributeLayerSettings(r protocol.IO, x *protocol.AttributeLayerSettings) {
@@ -38,12 +43,16 @@ func MarshalAttributeLayerSettings(r protocol.IO, x *protocol.AttributeLayerSett
 
 func MarshalAttributeLayerData(r protocol.IO, x *protocol.AttributeLayerData) {
 	r.String(&x.Name)
+	noise := layerNoiseFromNative(x)
 	if IsProtoGTE(r, ID1001) {
-		protocol.OptionalFunc(r, &x.NoiseName, r.String)
+		protocol.OptionalFunc(r, &noise, r.String)
 	}
 	r.Varint32(&x.DimensionID)
 	MarshalAttributeLayerSettings(r, &x.Settings)
 	protocol.FuncIOSlice(r, &x.EnvironmentAttributes, MarshalEnvironmentAttributeData)
+	if IsReader(r) {
+		layerNoiseToNative(x, noise)
+	}
 }
 
 func marshalLegacyAttributeLayerWeight(r protocol.IO, settings *protocol.AttributeLayerSettings, noiseName *protocol.Optional[string]) {

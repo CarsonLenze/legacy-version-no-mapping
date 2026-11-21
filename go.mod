@@ -7,14 +7,14 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/samber/lo v1.53.0
-	github.com/sandertv/gophertunnel v1.62.0
+	github.com/sandertv/gophertunnel v1.63.1-0.20261109094306-477607dcca7c
 	golang.org/x/oauth2 v0.37.0
 )
 
 require (
 	github.com/coder/websocket v1.8.15 // indirect
 	github.com/coreos/go-oidc/v3 v3.21.0 // indirect
-	github.com/df-mc/go-nethernet v1.0.23 // indirect
+	github.com/df-mc/go-nethernet v1.0.26 // indirect
 	github.com/df-mc/go-playfab/v2 v2.0.3 // indirect
 	github.com/df-mc/go-xsapi/v2 v2.0.3 // indirect
 	github.com/df-mc/jsonc v1.0.5 // indirect

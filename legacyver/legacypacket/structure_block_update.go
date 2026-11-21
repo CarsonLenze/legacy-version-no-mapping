@@ -10,7 +10,12 @@ func StructureBlockUpdate(io protocol.IO, pk *packet.StructureBlockUpdate) {
 	proto.IOUBlockPos(io, &pk.Position)
 	io.String(&pk.StructureName)
 	if proto.IsProtoGTE(io, proto.ID776) {
-		io.String(&pk.FilteredStructureName)
+		filtered, _ := pk.FilteredStructureName.Value()
+		io.String(&filtered)
+		pk.FilteredStructureName = protocol.Optional[string]{}
+		if filtered != "" {
+			pk.FilteredStructureName = protocol.Option(filtered)
+		}
 	}
 	io.String(&pk.DataField)
 	io.Bool(&pk.IncludePlayers)

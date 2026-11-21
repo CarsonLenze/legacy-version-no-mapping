@@ -21,7 +21,9 @@ var personaPieceTypes = [...]string{
 
 func MarshalSkin(r protocol.IO, x *protocol.Skin) {
 	r.String(&x.SkinID)
-	r.String(&x.PlayFabID)
+	// The PlayFab ID was removed in 1.26.60; older clients still read the field.
+	playFabID := ""
+	r.String(&playFabID)
 	r.ByteSlice(&x.SkinResourcePatch)
 	r.Uint32(&x.SkinImageWidth)
 	r.Uint32(&x.SkinImageHeight)

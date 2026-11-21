@@ -61,12 +61,12 @@ func MarshalCameraRotationOption(r protocol.IO, x *protocol.CameraRotationOption
 
 func MarshalCameraSplineInstruction(r protocol.IO, x *protocol.CameraSplineInstruction) {
 	r.Float32(&x.TotalTime)
-	if IsProtoLT(r, ID924) {
-		easeType, _ := x.SplineType.Value()
-		r.Uint8(&easeType)
-		x.SplineType = protocol.Option(easeType)
+	if IsProtoGTE(r, ID924) && IsProtoLT(r, ID944) {
+		splineType := protocol.Option(x.SplineType)
+		protocol.OptionalFunc(r, &splineType, r.Uint8)
+		x.SplineType, _ = splineType.Value()
 	} else {
-		protocol.OptionalFunc(r, &x.SplineType, r.Uint8)
+		r.Uint8(&x.SplineType)
 	}
 	protocol.FuncSlice(r, &x.Curve, r.Vec3)
 	if IsProtoLT(r, ID924) {
@@ -87,8 +87,10 @@ func MarshalCameraSplineInstruction(r protocol.IO, x *protocol.CameraSplineInstr
 	}
 	protocol.FuncIOSlice(r, &x.RotationOptions, MarshalCameraRotationOption)
 	if IsProtoGTE(r, ID944) {
-		protocol.OptionalFunc(r, &x.SplineIdentifier, r.String)
-		protocol.OptionalFunc(r, &x.LoadFromJson, r.Bool)
+		r.String(&x.SplineIdentifier)
+		r.Bool(&x.LoadFromJson)
+	} else if IsReader(r) {
+		x.SplineIdentifier, x.LoadFromJson = "", false
 	}
 }
 
@@ -131,21 +133,31 @@ func MarshalCameraSplineDefinition(r protocol.IO, x *protocol.CameraSplineDefini
 	r.String(&x.Name)
 	if IsProtoGTE(r, ID944) {
 		r.Float32(&x.TotalTime)
-		protocol.OptionalFunc(r, &x.SplineType, r.String)
+		r.String(&x.SplineType)
 		protocol.FuncSlice(r, &x.ControlPoints, r.Vec3)
-		protocol.FuncIOSlice(r, &x.ProgressKeyFrames, MarshalCameraProgressOption)
-		protocol.FuncIOSlice(r, &x.RotationKeyFrames, MarshalCameraRotationOption)
-	} else {
-		d := &protocol.CameraSplineInstruction{
-			TotalTime:         x.TotalTime,
-			Curve:             x.ControlPoints,
-			ProgressKeyFrames: x.ProgressKeyFrames,
-			RotationOptions:   x.RotationKeyFrames,
-		}
-		MarshalCameraSplineInstruction(r, d)
-		x.TotalTime = d.TotalTime
-		x.ControlPoints = d.Curve
-		x.ProgressKeyFrames = d.ProgressKeyFrames
-		x.RotationKeyFrames = d.RotationOptions
+		protocol.Slice(r, &x.ProgressKeyFrames)
+		protocol.Slice(r, &x.RotationKeyFrames)
+		return
+	}
+	d := &protocol.CameraSplineInstruction{TotalTime: x.TotalTime, Curve: x.ControlPoints}
+	for _, frame := range x.ProgressKeyFrames {
+		ease, _ := frame.EaseType.Value()
+		d.ProgressKeyFrames = append(d.ProgressKeyFrames, protocol.CameraProgressOption{Value: frame.Value, Time: frame.Time, EaseType: ease})
+	}
+	for _, frame := range x.RotationKeyFrames {
+		ease, _ := frame.EaseType.Value()
+		d.RotationOptions = append(d.RotationOptions, protocol.CameraRotationOption{Value: frame.Value, Time: frame.Time, EaseType: ease})
+	}
+	MarshalCameraSplineInstruction(r, d)
+	if !IsReader(r) {
+		return
+	}
+	x.TotalTime, x.ControlPoints = d.TotalTime, d.Curve
+	x.ProgressKeyFrames, x.RotationKeyFrames = nil, nil
+	for _, frame := range d.ProgressKeyFrames {
+		x.ProgressKeyFrames = append(x.ProgressKeyFrames, protocol.CameraSplineProgressKeyFrame{Value: frame.Value, Time: frame.Time, EaseType: protocol.Option(frame.EaseType)})
+	}
+	for _, frame := range d.RotationOptions {
+		x.RotationKeyFrames = append(x.RotationKeyFrames, protocol.CameraSplineRotationKeyFrame{Value: frame.Value, Time: frame.Time, EaseType: protocol.Option(frame.EaseType)})
 	}
 }

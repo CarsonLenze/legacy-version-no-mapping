@@ -65,6 +65,7 @@ func registerPackets() {
 	registerPacket(&packet.CreativeContent{}, legacypacket.CreativeContent)
 	registerPacket(&packet.Disconnect{}, legacypacket.Disconnect)
 	registerPacket(&packet.DimensionData{}, legacypacket.DimensionData)
+	registerPacket(&packet.EducationSettings{}, legacypacket.EducationSettings)
 	registerPacket(&packet.EditorNetwork{}, legacypacket.EditorNetwork)
 	registerPacket(&packet.Emote{}, legacypacket.Emote)
 	registerPacket(&packet.Event{}, legacypacket.Event)
@@ -187,24 +188,22 @@ func (p *Protocol) ID() int32 {
 }
 
 func (p *Protocol) Packets(listener bool) packet.Pool {
-	if p.id < proto.ID2192 {
-		base := packetPoolServer
-		if listener {
-			base = packetPoolClient
-		}
-		pool := make(packet.Pool, len(base)+1)
-		for id, constructor := range base {
-			pool[id] = constructor
-		}
-		if p.id < proto.ID2168 {
-			pool[legacypacket.IDSetMovementAuthority] = func() packet.Packet { return &legacypacket.SetMovementAuthority{} }
-		}
-		return pool
-	}
+	base := packetPoolServer
 	if listener {
-		return packetPoolClient
+		base = packetPoolClient
 	}
-	return packetPoolServer
+	pool := make(packet.Pool, len(base)+1)
+	for id, constructor := range base {
+		// Packets added in 1.26.60 do not exist for older clients.
+		if id > packet.IDRecordStarted {
+			continue
+		}
+		pool[id] = constructor
+	}
+	if p.id < proto.ID2168 {
+		pool[legacypacket.IDSetMovementAuthority] = func() packet.Packet { return &legacypacket.SetMovementAuthority{} }
+	}
+	return pool
 }
 
 func (p *Protocol) NewReader(r minecraft.ByteReader, shieldID int32, enableLimits bool) protocol.IO {
@@ -220,6 +219,10 @@ func (p *Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pac
 }
 
 func (p *Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) []packet.Packet {
+	if pk.ID() > packet.IDRecordStarted {
+		// Added in 1.26.60; older clients would disconnect on an unknown packet ID.
+		return nil
+	}
 	return p.downgradePackets([]packet.Packet{pk}, conn)
 }
 

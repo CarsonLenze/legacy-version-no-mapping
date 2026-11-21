@@ -9,13 +9,10 @@ import (
 func ClientboundUpdateSoundData(io protocol.IO, pk *packet.ClientboundUpdateSoundData) {
 	io.Uint64(&pk.ServerSoundHandle)
 	if proto.IsProtoGTE(io, proto.ID2168) {
-		protocol.Single(io, &pk.Stop)
-		protocol.Single(io, &pk.SetVolume)
-		protocol.Single(io, &pk.SetPitch)
-		protocol.Single(io, &pk.Fade)
-		protocol.Single(io, &pk.SeekTo)
-		protocol.Single(io, &pk.Pause)
-		protocol.Single(io, &pk.Resume)
+		// Before 1.26.60 the update was sent seven times; the client used the last one.
+		for range 7 {
+			proto.MarshalSoundDataUpdate(io, &pk.Update)
+		}
 		return
 	}
 	event := "Stop"
@@ -25,6 +22,6 @@ func ClientboundUpdateSoundData(io protocol.IO, pk *packet.ClientboundUpdateSoun
 			io.UnknownEnumOption(event, "sound data event")
 			return
 		}
-		pk.Stop = protocol.SoundDataUpdate{Type: protocol.SoundDataUpdateStop}
+		pk.Update = protocol.SoundDataUpdate{Type: protocol.SoundDataUpdateStop}
 	}
 }

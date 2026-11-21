@@ -3,7 +3,9 @@ package proto
 import "github.com/sandertv/gophertunnel/minecraft/protocol"
 
 func MarshalSoundDataUpdate(io protocol.IO, x *protocol.SoundDataUpdate) {
-	io.Varuint32(&x.Type)
+	kind := uint32(x.Type)
+	io.Varuint32(&kind)
+	x.Type = uint8(kind)
 	switch x.Type {
 	case protocol.SoundDataUpdateStop, protocol.SoundDataUpdatePause, protocol.SoundDataUpdateResume:
 	case protocol.SoundDataUpdateSetVolume:
