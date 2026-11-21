@@ -161,9 +161,7 @@ func MarshalConsumeStackRequestAction(r protocol.IO, a *protocol.ConsumeStackReq
 
 func MarshalCraftRecipeStackRequestAction(r protocol.IO, a *protocol.CraftRecipeStackRequestAction) {
 	r.Varuint32(&a.RecipeNetworkID)
-	if IsProtoGTE(r, ID712) {
-		r.Uint8(&a.NumberOfCrafts)
-	}
+	legacyCraftCount(r, &a.NumberOfCrafts)
 }
 
 func MarshalAutoCraftRecipeStackRequestAction(r protocol.IO, a *protocol.AutoCraftRecipeStackRequestAction) {
@@ -183,9 +181,7 @@ func MarshalAutoCraftRecipeStackRequestAction(r protocol.IO, a *protocol.AutoCra
 
 func MarshalCraftCreativeStackRequestAction(r protocol.IO, a *protocol.CraftCreativeStackRequestAction) {
 	r.Varuint32(&a.CreativeItemNetworkID)
-	if IsProtoGTE(r, ID712) {
-		r.Uint8(&a.NumberOfCrafts)
-	}
+	legacyCraftCount(r, &a.NumberOfCrafts)
 }
 
 func MarshalCraftGrindstoneRecipeStackRequestAction(r protocol.IO, c *protocol.CraftGrindstoneRecipeStackRequestAction) {
@@ -194,16 +190,24 @@ func MarshalCraftGrindstoneRecipeStackRequestAction(r protocol.IO, c *protocol.C
 	} else {
 		r.Varuint32(&c.RecipeNetworkID)
 	}
-	if IsProtoGTE(r, ID712) {
-		r.Uint8(&c.NumberOfCrafts)
-	}
+	legacyCraftCount(r, &c.NumberOfCrafts)
 	r.Varint32(&c.Cost)
 }
 
 func MarshalCraftLoomRecipeStackRequestAction(r protocol.IO, c *protocol.CraftLoomRecipeStackRequestAction) {
 	r.String(&c.Pattern)
+	legacyCraftCount(r, &c.TimesCrafted)
+}
+
+// legacyCraftCount reads/writes the craft count added in 1.21.20. Older clients do not send it because each of
+// their craft actions is a single craft, so it is read as 1; servers reject a count of 0.
+func legacyCraftCount(r protocol.IO, count *uint8) {
 	if IsProtoGTE(r, ID712) {
-		r.Uint8(&c.TimesCrafted)
+		r.Uint8(count)
+		return
+	}
+	if _, reading := r.(*Reader); reading {
+		*count = 1
 	}
 }
 
